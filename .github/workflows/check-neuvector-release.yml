@@ -30,7 +30,7 @@ jobs:
         with:
           repository: anarkis/neuvector
           ref: main
-          path: ${{  env.GIT_PATH_NEUVECTOR }}
+          path: ${{ env.GIT_PATH_NEUVECTOR }}
           sparse-checkout: |
             .github/upgrade-responder.json
           sparse-checkout-cone-mode: true
@@ -49,7 +49,7 @@ jobs:
           else
             echo "FALSE: Files differ"
             echo "TO_BE_UPDATED=true" >> "$GITHUB_OUTPUT"
-            TAG=$(jq ".Versions[0].Tags[1]" manifests/upgrade-responder/resources/ConfigMap/upgrade-responder.json)
+            TAG=$(jq ".Versions[0].Tags[1]" neuvector/.github/upgrade-responder.json)
             echo "TAG_TO_UPDATE=$TAG" >> "$GITHUB_OUTPUT"
           fi
 
@@ -68,6 +68,7 @@ jobs:
           BRANCH_NAME="${BRANCH_NAME_PREFIX}-$(date +%Y%m%d%H%M%S)"
           echo "Creating and pushing branch: $BRANCH_NAME"
           git checkout -b "$BRANCH_NAME"
+          git diff
           git add manifests/upgrade-responder/resources/ConfigMap/upgrade-responder.json
           git commit -m "Automated commit by GitHub Actions"            
           git push origin "$BRANCH_NAME"
