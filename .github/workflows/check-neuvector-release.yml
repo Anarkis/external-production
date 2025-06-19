@@ -6,11 +6,11 @@ on:
 jobs:
   checker-nuevector-upgrade-responder:
     permissions:
-      contents: read
+      contents: write
+      pull-requests: write 
 
     runs-on: ubuntu-latest
     env:
-      #TAG_FROM_PUBLISH: ${{ needs.publish.outputs.parsed_tag }}
       COMMIT_MESSAGE: "Automated commit by GitHub Actions"
       BRANCH_NAME_PREFIX: "auto-update/upgrade-responder-"
       GIT_PATH_NEUVECTOR: "neuvector/"
@@ -36,30 +36,40 @@ jobs:
             .github/upgrade-responder.json
           sparse-checkout-cone-mode: true
 
-      - name: Compare upgrade-responder versions
+      - name: ls folders
         run: |
           ls -la .
           ls -la neuvector/
 
       - name: Compare upgrade-responder versions
+        id: checker-diff-files
         run: |
           if diff -q manifests/upgrade-responder/resources/ConfigMap/upgrade-responder.json neuvector/.github/upgrade-responder.json; then
             echo "TRUE: Files are identical"
+            echo "TO_BE_UPDATED=false" >> "$GITHUB_OUTPUT"
           else
-            echo "FALSE: Files differ or an error occurred"
+            echo "FALSE: Files differ"
+            echo "TO_BE_UPDATED=true" >> "$GITHUB_OUTPUT"
+            TAG=$(jq ".Versions[0].Tags[1]" manifests/upgrade-responder/resources/ConfigMap/upgrade-responder.json)
+            echo "TAG_TO_UPDATE=$TAG" >> "$GITHUB_OUTPUT"
           fi
 
-      #- name: Commit and push changes to external-production
-        #env:
-          #GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-        #run: |
-          #BRANCH_NAME="auto-update/upgrade-responder-$(date +%Y%m%d%H%M%S)"
-          #echo "Creating and pushing branch: $BRANCH_NAME"
-          #cp .github/upgrade-responder.json external-production/ 
-          #cd external-production/
-          #git checkout -b "$BRANCH_NAME"
-          #git add upgrade-responder.json
-          #git commit -m "Automated commit by GitHub Actions"            
-          #git push origin "$BRANCH_NAME"
-          #gh pr create --base main --head "$BRANCH_NAME" --title "Automated: Update upgrade-responder.json to $TAG_FROM_PUBLISH" --body "This PR updates the \`upgrade-responder.json\` file with the version \`$TAG_FROM_PUBLISH\`, generated automatically by GitHub Actions."
+      - name: Set git config
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
+      - name: Update external-production upgrade-responder file
+        if: ${{ steps.checker-diff-files.outputs.TO_BE_UPDATED }} == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.checker-diff-files.outputs.TAG_TO_UPDATE }}
+        run: |
+         cp -f neuvector/.github/upgrade-responder.json manifests/upgrade-responder/resources/ConfigMap/upgrade-responder.json
+         BRANCH_NAME="$BRANCH_NAME_PREFIX$(date +%Y%m%d%H%M%S)"
+         echo "Creating and pushing branch: $BRANCH_NAME"
+         git checkout -b "$BRANCH_NAME"
+         git add manifests/upgrade-responder/resources/ConfigMap/upgrade-responder.json
+         git commit -m "Automated commit by GitHub Actions"            
+         git push origin "$BRANCH_NAME"
+         gh pr create --base main --head "$BRANCH_NAME" --title "Automated: Update upgrade-responder.json to $TAG" --body "This PR updates the \`upgrade-responder.json\` file with the version \`$TAG\`, generated automatically by GitHub Actions."
