@@ -5,18 +5,17 @@ on:
 
 jobs:
   checker-nuevector-upgrade-responder:
+    runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write 
-
-    runs-on: ubuntu-latest
     env:
       COMMIT_MESSAGE: "Automated commit by GitHub Actions"
       BRANCH_NAME_PREFIX: "auto-update/upgrade-responder-"
       GIT_PATH_NEUVECTOR: "neuvector/"
       FILE_PATH_NEUVECTOR:
+    
     steps:
-
       - name: Checkout external-production repository
         uses: actions/checkout@v4
         with:
@@ -65,11 +64,11 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.checker-diff-files.outputs.TAG_TO_UPDATE }}
         run: |
-         cp -f neuvector/.github/upgrade-responder.json manifests/upgrade-responder/resources/ConfigMap/upgrade-responder.json
-         BRANCH_NAME="$BRANCH_NAME_PREFIX$(date +%Y%m%d%H%M%S)"
-         echo "Creating and pushing branch: $BRANCH_NAME"
-         git checkout -b "$BRANCH_NAME"
-         git add manifests/upgrade-responder/resources/ConfigMap/upgrade-responder.json
-         git commit -m "Automated commit by GitHub Actions"            
-         git push origin "$BRANCH_NAME"
-         gh pr create --base main --head "$BRANCH_NAME" --title "Automated: Update upgrade-responder.json to $TAG" --body "This PR updates the \`upgrade-responder.json\` file with the version \`$TAG\`, generated automatically by GitHub Actions."
+          cp -f neuvector/.github/upgrade-responder.json manifests/upgrade-responder/resources/ConfigMap/upgrade-responder.json
+          BRANCH_NAME="${BRANCH_NAME_PREFIX}-$(date +%Y%m%d%H%M%S)"
+          echo "Creating and pushing branch: $BRANCH_NAME"
+          git checkout -b "$BRANCH_NAME"
+          git add manifests/upgrade-responder/resources/ConfigMap/upgrade-responder.json
+          git commit -m "Automated commit by GitHub Actions"            
+          git push origin "$BRANCH_NAME"
+          gh pr create --base main --head "$BRANCH_NAME" --title "Automated: Update upgrade-responder.json to $TAG" --body "This PR updates the \`upgrade-responder.json\` file with the version \`$TAG\`, generated automatically by GitHub Actions."
