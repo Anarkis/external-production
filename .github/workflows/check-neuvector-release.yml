@@ -1,0 +1,65 @@
+name: update-neuvector-upgrade-responder
+
+on:
+  workflow_dispatch:
+
+jobs:
+  checker-nuevector-upgrade-responder:
+    permissions:
+      contents: read
+
+    runs-on: ubuntu-latest
+    env:
+      #TAG_FROM_PUBLISH: ${{ needs.publish.outputs.parsed_tag }}
+      COMMIT_MESSAGE: "Automated commit by GitHub Actions"
+      BRANCH_NAME_PREFIX: "auto-update/upgrade-responder-"
+      GIT_PATH_NEUVECTOR: "neuvector/"
+      FILE_PATH_NEUVECTOR:
+    steps:
+
+      - name: Checkout external-production repository
+        uses: actions/checkout@v4
+        with:
+          #repository: rancher-eio/external-production
+          ref: main
+          sparse-checkout: |
+            manifests/upgrade-responder/resources/ConfigMap/
+          sparse-checkout-cone-mode: true
+
+      - name: Checkout neuvector repository (only upgrade-responder.json)
+        uses: actions/checkout@v4
+        with:
+          repository: anarkis/neuvector
+          ref: main
+          path: ${{  env.GIT_PATH_NEUVECTOR }}
+          sparse-checkout: |
+            .github/upgrade-responder.json
+          sparse-checkout-cone-mode: true
+
+      - name: Compare upgrade-responder versions
+        run: |
+          ls -la .
+          ls -la neuvector/
+
+      - name: Compare upgrade-responder versions
+        run: |
+          if diff -q manifests/upgrade-responder/resources/ConfigMap/upgrade-responder.json neuvector/.github/upgrade-responder.json; then
+            echo "TRUE: Files are identical"
+          else
+            echo "FALSE: Files differ or an error occurred"
+          fi
+
+      #- name: Commit and push changes to external-production
+        #env:
+          #GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+        #run: |
+          #BRANCH_NAME="auto-update/upgrade-responder-$(date +%Y%m%d%H%M%S)"
+          #echo "Creating and pushing branch: $BRANCH_NAME"
+          #cp .github/upgrade-responder.json external-production/ 
+          #cd external-production/
+          #git checkout -b "$BRANCH_NAME"
+          #git add upgrade-responder.json
+          #git commit -m "Automated commit by GitHub Actions"            
+          #git push origin "$BRANCH_NAME"
+          #gh pr create --base main --head "$BRANCH_NAME" --title "Automated: Update upgrade-responder.json to $TAG_FROM_PUBLISH" --body "This PR updates the \`upgrade-responder.json\` file with the version \`$TAG_FROM_PUBLISH\`, generated automatically by GitHub Actions."
+
