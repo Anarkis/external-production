@@ -11,7 +11,7 @@ jobs:
       pull-requests: write 
     env:
       COMMIT_MESSAGE: "Automated commit by GitHub Actions"
-      BRANCH_NAME_PREFIX: "auto-update/upgrade-responder-"
+      BRANCH_NAME_PREFIX: "auto-update/neuvector-upgrade-responder-"
       GIT_PATH_NEUVECTOR: "neuvector/"
       FILE_PATH_NEUVECTOR:
     
@@ -49,7 +49,7 @@ jobs:
           else
             echo "FALSE: Files differ"
             echo "TO_BE_UPDATED=true" >> "$GITHUB_OUTPUT"
-            TAG=$(jq ".Versions[0].Tags[1]" neuvector/.github/upgrade-responder.json)
+            TAG=$(jq ".Versions[0].Tags[1]" neuvector/.github/upgrade-responder.json | tr -d "\"")
             echo "TAG_TO_UPDATE=$TAG" >> "$GITHUB_OUTPUT"
           fi
 
@@ -65,11 +65,11 @@ jobs:
           TAG: ${{ steps.checker-diff-files.outputs.TAG_TO_UPDATE }}
         run: |
           cp -f neuvector/.github/upgrade-responder.json manifests/upgrade-responder/resources/ConfigMap/upgrade-responder.json
-          BRANCH_NAME="${BRANCH_NAME_PREFIX}-$(date +%Y%m%d%H%M%S)"
+          BRANCH_NAME="${BRANCH_NAME_PREFIX}$TAG"
           echo "Creating and pushing branch: $BRANCH_NAME"
           git checkout -b "$BRANCH_NAME"
           git diff
           git add manifests/upgrade-responder/resources/ConfigMap/upgrade-responder.json
           git commit -m "Automated commit by GitHub Actions"            
           git push origin "$BRANCH_NAME"
-          gh pr create --base main --head "$BRANCH_NAME" --title "Automated: Update upgrade-responder.json to $TAG" --body "This PR updates the \`upgrade-responder.json\` file with the version \`$TAG\`, generated automatically by GitHub Actions."
+          gh pr create --base main --head "$BRANCH_NAME" --title "Automated: Update Neuvector upgrade-responder.json to $TAG" --body "This PR updates the \`upgrade-responder.json\` file with the version \`$TAG\`, generated automatically by GitHub Actions. Check https://github.com/neuvector/neuvector/ for more info"
